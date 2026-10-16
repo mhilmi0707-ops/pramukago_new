@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PramukaGo — Belajar Pramuka Jadi Seru</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src="./script/config.js"></script>
+<script src="./script/register.js"></script>
+<script src="./script/menu.js"></script>
+<script src="./script/kuis.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function currentUser(){return db.users.find(u=>u.username===db.current)}
+function toast(msg){const x=document.createElement('div');x.className='toast';x.textContent=msg;document.body.appendChild(x);setTimeout(()=>x.remove(),2200)}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+
+function render(){
+ if(!db.current){renderAuth('login');return}
+ const u=currentUser();
+ document.getElementById('root').innerHTML=`
+ <div class="app">
+  <header>
+   <div class="logo"><span>⚜</span> PramukaGo</div>
+   <div class="nav">
+    <button onclick="dashboard()">🏠 Beranda</button>
+    <button onclick="sejarah()">⚜️ Sejarah Pramuka</button>
+    <button onclick="showGames()">🎮 Game</button>
+    <button onclick="tokenCreateGame()">🔐 Buat Game</button>
+    <button onclick="profile()">👤 Profil</button>
+    <!-- <div class="avatar">${esc(u.name.split(' ')[0])}</div> -->
+	<button onclick="logout()">🚪 Log Out</button>
+   </div>
+  </header>
+  <main id="page"></main>
+ </div>`;
+ dashboard();
+}
+
+
+
+
+
+function openLevel(key){
+ const l=levels[key],u=currentUser();
+ if(l.premium){premiumModal(key);return}
+ document.getElementById('page').innerHTML=`
+ <div class="section-title"><div><h2>${l.icon} ${l.name}</h2><p>${l.desc}</p></div><button class="secondary" onclick="dashboard()">← Kembali</button></div>
+ <div class="lesson-list">${lessons[key].map((x,i)=>{
+  const done=u.completed.includes(key+i);
+  return `<div class="lesson"><div class="lesson-icon">${x[0]}</div><div class="grow"><b>${x[1]}</b><br><small>${x[2]}</small></div><span>${done?'✅':'+'+(i+1)*10+' XP'}</span><button class="${done?'secondary':'primary'}" onclick="startLesson('${key}',${i})">${done?'Ulangi':'Mulai'}</button></div>`
+ }).join('')}</div>`;
+}
+function premiumModal(key){
+ document.getElementById('root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="modal"><div class="modal">
+ <div class="modal-top"><h2>${levels[key].icon} ${levels[key].name} Premium</h2><button class="close" onclick="closeModal()">×</button></div>
+ <p>Akses materi lanjutan, game challenge, dan fitur kuis yang bisa dibagikan ke siswa.</p>
+ <div class="card" style="background:#fff8e8;margin:20px 0"><h3>✨ Paket Premium</h3><p>• Materi lengkap<br>• Quiz dan game interaktif<br>• Buat game dengan kode<br>• Leaderboard pemain</p><h2>Rp 19.000 <small>/bulan</small></h2><button class="primary" onclick="demoPremium('${key}')">Aktifkan Demo Premium</button></div>
+ </div></div>`);
+}
+function demoPremium(key){closeModal();toast('Mode Premium demo aktif! 🚀');showCreateGame()}
+function closeModal(){document.getElementById('modal')?.remove()}
+function startLesson(key,i){
+ const l=lessons[key][i];
+ document.getElementById('root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="modal"><div class="modal">
+ <div class="modal-top"><h2>${l[0]} ${l[1]}</h2><button class="close" onclick="closeModal()">×</button></div>
+ <p>${l[2]}</p>
+ <div class="card" style="background:#f4faf3"><b>🎯 Tantangan:</b><p>${l[3]}</p></div>
+ <button class="primary" onclick="completeLesson('${key}',${i})">Saya Sudah Belajar +10 XP</button>
+ </div></div>`);
+}
+
+function completeLesson(key,i){
+ const u=currentUser(),id=key+i;
+ if(!u.completed.includes(id)){u.completed.push(id);u.xp+=10;if(u.completed.length%4===0)u.badges.push('Scout Learner')}
+ save();closeModal();openLevel(key);toast('+10 XP! 🎉');
+}
+
+
+function playSharedGame1(code){closeModal();startQuiz()}
+
+
+
+render();
+</script>
+</body>
+</html>
